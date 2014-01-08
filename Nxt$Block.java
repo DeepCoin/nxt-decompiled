@@ -52,10 +52,10 @@ class Nxt$Block
   
   Nxt$Block(int paramInt1, int paramInt2, long paramLong, int paramInt3, int paramInt4, int paramInt5, int paramInt6, byte[] paramArrayOfByte1, byte[] paramArrayOfByte2, byte[] paramArrayOfByte3, byte[] paramArrayOfByte4, byte[] paramArrayOfByte5)
   {
-    if (paramInt3 > 255) {
+    if ((paramInt3 > 255) || (paramInt3 < 0)) {
       throw new IllegalArgumentException("attempted to create a block with " + paramInt3 + " transactions");
     }
-    if (paramInt6 > 32640) {
+    if ((paramInt6 > 32640) || (paramInt6 < 0)) {
       throw new IllegalArgumentException("attempted to create a block with payloadLength " + paramInt6);
     }
     this.version = paramInt1;

@@ -186,6 +186,8 @@ class Nxt$7
                       Nxt.accounts.clear();
                       Nxt.aliases.clear();
                       Nxt.aliasIdToAliasMappings.clear();
+                      Nxt.unconfirmedTransactions.clear();
+                      Nxt.doubleSpendingTransactions.clear();
                       Nxt.logMessage("Re-scanning blockchain...");
                       localObject2 = new HashMap(Nxt.blocks);
                       Nxt.blocks.clear();
@@ -197,7 +199,7 @@ class Nxt$7
                         long l6 = localBlock2.nextBlock;
                         localBlock2.analyze();
                         l5 = l6;
-                      } while (l3 != 0L);
+                      } while (l5 != 0L);
                       Nxt.logMessage("...Done");
                     }
                   }
