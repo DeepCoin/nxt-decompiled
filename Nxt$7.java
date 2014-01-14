@@ -45,7 +45,7 @@ class Nxt$7
               while (localIterator.hasNext())
               {
                 Object localObject1 = localIterator.next();
-                long l2 = new BigInteger((String)localObject1).longValue();
+                long l2 = Nxt.parseUnsignedLong((String)localObject1);
                 Nxt.Block localBlock1 = (Nxt.Block)Nxt.blocks.get(Long.valueOf(l2));
                 if (localBlock1 != null)
                 {
@@ -71,7 +71,7 @@ class Nxt$7
                 }
                 for (i = 0; i < j; i++)
                 {
-                  long l4 = new BigInteger((String)localJSONArray2.get(i)).longValue();
+                  long l4 = Nxt.parseUnsignedLong((String)localJSONArray2.get(i));
                   if (Nxt.blocks.get(Long.valueOf(l4)) == null) {
                     break;
                   }

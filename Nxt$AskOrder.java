@@ -1,12 +1,12 @@
 class Nxt$AskOrder
   implements Comparable<AskOrder>
 {
-  long id;
-  long height;
-  Nxt.Account account;
-  long asset;
-  int quantity;
-  long price;
+  final long id;
+  final long height;
+  final Nxt.Account account;
+  final long asset;
+  volatile int quantity;
+  final long price;
   
   Nxt$AskOrder(long paramLong1, Nxt.Account paramAccount, long paramLong2, int paramInt, long paramLong3)
   {

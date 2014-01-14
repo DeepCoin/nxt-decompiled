@@ -25,7 +25,7 @@ class Nxt$6
         if ((((Nxt.Transaction)localObject1).timestamp + ((Nxt.Transaction)localObject1).deadline * 60 < i) || (!((Nxt.Transaction)localObject1).validateAttachment()))
         {
           localIterator.remove();
-          localObject2 = (Nxt.Account)Nxt.accounts.get(Long.valueOf(Nxt.Account.getId(((Nxt.Transaction)localObject1).senderPublicKey)));
+          localObject2 = (Nxt.Account)Nxt.accounts.get(Long.valueOf(((Nxt.Transaction)localObject1).getSenderAccountId()));
           ((Nxt.Account)localObject2).addToUnconfirmedBalance((((Nxt.Transaction)localObject1).amount + ((Nxt.Transaction)localObject1).fee) * 100L);
           localObject3 = new JSONObject();
           ((JSONObject)localObject3).put("index", Integer.valueOf(((Nxt.Transaction)localObject1).index));

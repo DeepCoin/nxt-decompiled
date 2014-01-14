@@ -1,8 +1,9 @@
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.Writer;
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
-import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletResponse;
 import org.json.simple.JSONObject;
 
@@ -26,11 +27,11 @@ class Nxt$UserAsyncListener
     synchronized (this.user)
     {
       this.user.asyncContext.getResponse().setContentType("text/plain; charset=UTF-8");
-      ServletOutputStream localServletOutputStream = this.user.asyncContext.getResponse().getOutputStream();
+      PrintWriter localPrintWriter = this.user.asyncContext.getResponse().getWriter();
       Object localObject1 = null;
       try
       {
-        localServletOutputStream.write(new JSONObject().toString().getBytes("UTF-8"));
+        new JSONObject().writeJSONString(localPrintWriter);
       }
       catch (Throwable localThrowable2)
       {
@@ -39,18 +40,18 @@ class Nxt$UserAsyncListener
       }
       finally
       {
-        if (localServletOutputStream != null) {
+        if (localPrintWriter != null) {
           if (localObject1 != null) {
             try
             {
-              localServletOutputStream.close();
+              localPrintWriter.close();
             }
             catch (Throwable localThrowable3)
             {
               localObject1.addSuppressed(localThrowable3);
             }
           } else {
-            localServletOutputStream.close();
+            localPrintWriter.close();
           }
         }
       }
@@ -69,11 +70,11 @@ class Nxt$UserAsyncListener
     synchronized (this.user)
     {
       this.user.asyncContext.getResponse().setContentType("text/plain; charset=UTF-8");
-      ServletOutputStream localServletOutputStream = this.user.asyncContext.getResponse().getOutputStream();
+      PrintWriter localPrintWriter = this.user.asyncContext.getResponse().getWriter();
       Object localObject1 = null;
       try
       {
-        localServletOutputStream.write(new JSONObject().toString().getBytes("UTF-8"));
+        new JSONObject().writeJSONString(localPrintWriter);
       }
       catch (Throwable localThrowable2)
       {
@@ -82,18 +83,18 @@ class Nxt$UserAsyncListener
       }
       finally
       {
-        if (localServletOutputStream != null) {
+        if (localPrintWriter != null) {
           if (localObject1 != null) {
             try
             {
-              localServletOutputStream.close();
+              localPrintWriter.close();
             }
             catch (Throwable localThrowable3)
             {
               localObject1.addSuppressed(localThrowable3);
             }
           } else {
-            localServletOutputStream.close();
+            localPrintWriter.close();
           }
         }
       }

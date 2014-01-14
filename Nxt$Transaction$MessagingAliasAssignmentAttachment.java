@@ -16,6 +16,16 @@ class Nxt$Transaction$MessagingAliasAssignmentAttachment
     this.uri = paramString2;
   }
   
+  public int getSize()
+  {
+    try
+    {
+      return 1 + this.alias.getBytes("UTF-8").length + 2 + this.uri.getBytes("UTF-8").length;
+    }
+    catch (Exception localException) {}
+    return 0;
+  }
+  
   public byte[] getBytes()
   {
     try
@@ -40,4 +50,14 @@ class Nxt$Transaction$MessagingAliasAssignmentAttachment
     localJSONObject.put("alias", this.alias);
     localJSONObject.put("uri", this.uri);
     return localJSONObject;
+  }
+  
+  public long getRecipientDeltaBalance()
+  {
+    return 0L;
+  }
+  
+  public long getSenderDeltaBalance()
+  {
+    return 0L;
   }

@@ -18,6 +18,16 @@ class Nxt$Transaction$ColoredCoinsAssetIssuanceAttachment
     this.quantity = paramInt;
   }
   
+  public int getSize()
+  {
+    try
+    {
+      return 1 + this.name.getBytes("UTF-8").length + 2 + this.description.getBytes("UTF-8").length + 4;
+    }
+    catch (Exception localException) {}
+    return 0;
+  }
+  
   public byte[] getBytes()
   {
     try
@@ -44,4 +54,14 @@ class Nxt$Transaction$ColoredCoinsAssetIssuanceAttachment
     localJSONObject.put("description", this.description);
     localJSONObject.put("quantity", Integer.valueOf(this.quantity));
     return localJSONObject;
+  }
+  
+  public long getRecipientDeltaBalance()
+  {
+    return 0L;
+  }
+  
+  public long getSenderDeltaBalance()
+  {
+    return 0L;
   }

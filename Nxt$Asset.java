@@ -1,9 +1,9 @@
 class Nxt$Asset
 {
-  long accountId;
-  String name;
-  String description;
-  int quantity;
+  final long accountId;
+  final String name;
+  final String description;
+  final int quantity;
   
   Nxt$Asset(long paramLong, String paramString1, String paramString2, int paramInt)
   {

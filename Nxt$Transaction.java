@@ -7,13 +7,16 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.MessageDigest;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -48,6 +51,11 @@ class Nxt$Transaction
   int index;
   volatile long block;
   int height;
+  public static final Comparator<Transaction> timestampComparator = new Nxt.Transaction.1();
+  private static final int TRANSACTION_BYTES_LENGTH = 128;
+  volatile transient long id;
+  volatile transient String stringId = null;
+  volatile transient long senderAccountId;
   
   Nxt$Transaction(byte paramByte1, byte paramByte2, int paramInt1, short paramShort, byte[] paramArrayOfByte1, long paramLong1, int paramInt2, int paramInt3, long paramLong2, byte[] paramArrayOfByte2)
   {
@@ -72,10 +80,10 @@ class Nxt$Transaction
     if (this.height > paramTransaction.height) {
       return 1;
     }
-    if (this.fee * 1048576L / getBytes().length > paramTransaction.fee * 1048576L / paramTransaction.getBytes().length) {
+    if (this.fee * paramTransaction.getSize() > paramTransaction.fee * getSize()) {
       return -1;
     }
-    if (this.fee * 1048576L / getBytes().length < paramTransaction.fee * 1048576L / paramTransaction.getBytes().length) {
+    if (this.fee * paramTransaction.getSize() < paramTransaction.fee * getSize()) {
       return 1;
     }
     if (this.timestamp < paramTransaction.timestamp) {
@@ -93,9 +101,14 @@ class Nxt$Transaction
     return 0;
   }
   
+  int getSize()
+  {
+    return 128 + (this.attachment == null ? 0 : this.attachment.getSize());
+  }
+  
   byte[] getBytes()
   {
-    ByteBuffer localByteBuffer = ByteBuffer.allocate(128 + (this.attachment == null ? 0 : this.attachment.getBytes().length));
+    ByteBuffer localByteBuffer = ByteBuffer.allocate(getSize());
     localByteBuffer.order(ByteOrder.LITTLE_ENDIAN);
     localByteBuffer.put(this.type);
     localByteBuffer.put(this.subtype);
@@ -114,11 +127,41 @@ class Nxt$Transaction
   }
   
   long getId()
-    throws Exception
   {
-    byte[] arrayOfByte = MessageDigest.getInstance("SHA-256").digest(getBytes());
-    BigInteger localBigInteger = new BigInteger(1, new byte[] { arrayOfByte[7], arrayOfByte[6], arrayOfByte[5], arrayOfByte[4], arrayOfByte[3], arrayOfByte[2], arrayOfByte[1], arrayOfByte[0] });
-    return localBigInteger.longValue();
+    calculateIds();
+    return this.id;
+  }
+  
+  String getStringId()
+  {
+    calculateIds();
+    return this.stringId;
+  }
+  
+  long getSenderAccountId()
+  {
+    calculateIds();
+    return this.senderAccountId;
+  }
+  
+  private void calculateIds()
+  {
+    if (this.stringId != null) {
+      return;
+    }
+    try
+    {
+      byte[] arrayOfByte = MessageDigest.getInstance("SHA-256").digest(getBytes());
+      BigInteger localBigInteger = new BigInteger(1, new byte[] { arrayOfByte[7], arrayOfByte[6], arrayOfByte[5], arrayOfByte[4], arrayOfByte[3], arrayOfByte[2], arrayOfByte[1], arrayOfByte[0] });
+      this.id = localBigInteger.longValue();
+      this.stringId = localBigInteger.toString();
+      this.senderAccountId = Nxt.Account.getId(this.senderPublicKey);
+    }
+    catch (Exception localException)
+    {
+      Nxt.logMessage(localException.getMessage());
+      throw new RuntimeException(localException);
+    }
   }
   
   JSONObject getJSONObject()
@@ -138,6 +181,16 @@ class Nxt$Transaction
       localJSONObject.put("attachment", this.attachment.getJSONObject());
     }
     return localJSONObject;
+  }
+  
+  long getRecipientDeltaBalance()
+  {
+    return this.amount * 100L + (this.attachment == null ? 0L : this.attachment.getRecipientDeltaBalance());
+  }
+  
+  long getSenderDeltaBalance()
+  {
+    return -(this.amount + this.fee) * 100L + (this.attachment == null ? 0L : this.attachment.getSenderDeltaBalance());
   }
   
   static Transaction getTransaction(ByteBuffer paramByteBuffer)
@@ -164,6 +217,15 @@ class Nxt$Transaction
     case 1: 
       switch (b2)
       {
+      case 0: 
+        m = paramByteBuffer.getInt();
+        if (m <= 1000)
+        {
+          arrayOfByte3 = new byte[m];
+          paramByteBuffer.get(arrayOfByte3);
+          localTransaction.attachment = new Nxt.Transaction.MessagingArbitraryMessageAttachment(arrayOfByte3);
+        }
+        break;
       case 1: 
         m = paramByteBuffer.get();
         arrayOfByte3 = new byte[m];
@@ -234,10 +296,10 @@ class Nxt$Transaction
     int i = ((Long)paramJSONObject.get("timestamp")).intValue();
     short s = ((Long)paramJSONObject.get("deadline")).shortValue();
     byte[] arrayOfByte1 = Nxt.convert((String)paramJSONObject.get("senderPublicKey"));
-    long l1 = new BigInteger((String)paramJSONObject.get("recipient")).longValue();
+    long l1 = Nxt.parseUnsignedLong((String)paramJSONObject.get("recipient"));
     int j = ((Long)paramJSONObject.get("amount")).intValue();
     int k = ((Long)paramJSONObject.get("fee")).intValue();
-    long l2 = new BigInteger((String)paramJSONObject.get("referencedTransaction")).longValue();
+    long l2 = Nxt.parseUnsignedLong((String)paramJSONObject.get("referencedTransaction"));
     byte[] arrayOfByte2 = Nxt.convert((String)paramJSONObject.get("signature"));
     Transaction localTransaction = new Transaction(b1, b2, i, s, arrayOfByte1, l1, j, k, l2, arrayOfByte2);
     JSONObject localJSONObject = (JSONObject)paramJSONObject.get("attachment");
@@ -248,6 +310,10 @@ class Nxt$Transaction
     case 1: 
       switch (b2)
       {
+      case 0: 
+        str1 = (String)localJSONObject.get("message");
+        localTransaction.attachment = new Nxt.Transaction.MessagingArbitraryMessageAttachment(Nxt.convert(str1));
+        break;
       case 1: 
         str1 = (String)localJSONObject.get("alias");
         str2 = (String)localJSONObject.get("uri");
@@ -267,29 +333,27 @@ class Nxt$Transaction
         localTransaction.attachment = new Nxt.Transaction.ColoredCoinsAssetIssuanceAttachment(str1.trim(), str2.trim(), m);
         break;
       case 1: 
-        l3 = new BigInteger((String)localJSONObject.get("asset")).longValue();
+        l3 = Nxt.parseUnsignedLong((String)localJSONObject.get("asset"));
         m = ((Long)localJSONObject.get("quantity")).intValue();
         localTransaction.attachment = new Nxt.Transaction.ColoredCoinsAssetTransferAttachment(l3, m);
         break;
       case 2: 
-        l3 = new BigInteger((String)localJSONObject.get("asset")).longValue();
+        l3 = Nxt.parseUnsignedLong((String)localJSONObject.get("asset"));
         m = ((Long)localJSONObject.get("quantity")).intValue();
         l4 = ((Long)localJSONObject.get("price")).longValue();
         localTransaction.attachment = new Nxt.Transaction.ColoredCoinsAskOrderPlacementAttachment(l3, m, l4);
         break;
       case 3: 
-        l3 = new BigInteger((String)localJSONObject.get("asset")).longValue();
+        l3 = Nxt.parseUnsignedLong((String)localJSONObject.get("asset"));
         m = ((Long)localJSONObject.get("quantity")).intValue();
         l4 = ((Long)localJSONObject.get("price")).longValue();
         localTransaction.attachment = new Nxt.Transaction.ColoredCoinsBidOrderPlacementAttachment(l3, m, l4);
         break;
       case 4: 
-        l3 = new BigInteger((String)localJSONObject.get("order")).longValue();
-        localTransaction.attachment = new Nxt.Transaction.ColoredCoinsAskOrderCancellationAttachment(l3);
+        localTransaction.attachment = new Nxt.Transaction.ColoredCoinsAskOrderCancellationAttachment(Nxt.parseUnsignedLong((String)localJSONObject.get("order")));
         break;
       case 5: 
-        l3 = new BigInteger((String)localJSONObject.get("order")).longValue();
-        localTransaction.attachment = new Nxt.Transaction.ColoredCoinsBidOrderCancellationAttachment(l3);
+        localTransaction.attachment = new Nxt.Transaction.ColoredCoinsBidOrderCancellationAttachment(Nxt.parseUnsignedLong((String)localJSONObject.get("order")));
       }
       break;
     }
@@ -364,7 +428,7 @@ class Nxt$Transaction
             if ((Nxt.transactions.get(Long.valueOf(l2)) == null) && (Nxt.unconfirmedTransactions.get(Long.valueOf(l2)) == null) && (Nxt.doubleSpendingTransactions.get(Long.valueOf(l2)) == null) && (!localTransaction.verify())) {
               continue;
             }
-            l1 = Nxt.Account.getId(localTransaction.senderPublicKey);
+            l1 = localTransaction.getSenderAccountId();
             localObject3 = (Nxt.Account)Nxt.accounts.get(Long.valueOf(l1));
             if (localObject3 == null)
             {
@@ -386,30 +450,33 @@ class Nxt$Transaction
                   if (localTransaction.type == 2)
                   {
                     Object localObject4;
+                    Integer localInteger;
                     if (localTransaction.subtype == 1)
                     {
                       localObject4 = (Nxt.Transaction.ColoredCoinsAssetTransferAttachment)localTransaction.attachment;
-                      if ((((Nxt.Account)localObject3).unconfirmedAssetBalances.get(Long.valueOf(((Nxt.Transaction.ColoredCoinsAssetTransferAttachment)localObject4).asset)) == null) || (((Integer)((Nxt.Account)localObject3).unconfirmedAssetBalances.get(Long.valueOf(((Nxt.Transaction.ColoredCoinsAssetTransferAttachment)localObject4).asset))).intValue() < ((Nxt.Transaction.ColoredCoinsAssetTransferAttachment)localObject4).quantity))
+                      localInteger = ((Nxt.Account)localObject3).getUnconfirmedAssetBalance(Long.valueOf(((Nxt.Transaction.ColoredCoinsAssetTransferAttachment)localObject4).asset));
+                      if ((localInteger == null) || (localInteger.intValue() < ((Nxt.Transaction.ColoredCoinsAssetTransferAttachment)localObject4).quantity))
                       {
                         j = 1;
                         ((Nxt.Account)localObject3).addToUnconfirmedBalance(k * 100L);
                       }
                       else
                       {
-                        ((Nxt.Account)localObject3).unconfirmedAssetBalances.put(Long.valueOf(((Nxt.Transaction.ColoredCoinsAssetTransferAttachment)localObject4).asset), Integer.valueOf(((Integer)((Nxt.Account)localObject3).unconfirmedAssetBalances.get(Long.valueOf(((Nxt.Transaction.ColoredCoinsAssetTransferAttachment)localObject4).asset))).intValue() - ((Nxt.Transaction.ColoredCoinsAssetTransferAttachment)localObject4).quantity));
+                        ((Nxt.Account)localObject3).addToUnconfirmedAssetBalance(Long.valueOf(((Nxt.Transaction.ColoredCoinsAssetTransferAttachment)localObject4).asset), -((Nxt.Transaction.ColoredCoinsAssetTransferAttachment)localObject4).quantity);
                       }
                     }
                     else if (localTransaction.subtype == 2)
                     {
                       localObject4 = (Nxt.Transaction.ColoredCoinsAskOrderPlacementAttachment)localTransaction.attachment;
-                      if ((((Nxt.Account)localObject3).unconfirmedAssetBalances.get(Long.valueOf(((Nxt.Transaction.ColoredCoinsAskOrderPlacementAttachment)localObject4).asset)) == null) || (((Integer)((Nxt.Account)localObject3).unconfirmedAssetBalances.get(Long.valueOf(((Nxt.Transaction.ColoredCoinsAskOrderPlacementAttachment)localObject4).asset))).intValue() < ((Nxt.Transaction.ColoredCoinsAskOrderPlacementAttachment)localObject4).quantity))
+                      localInteger = ((Nxt.Account)localObject3).getUnconfirmedAssetBalance(Long.valueOf(((Nxt.Transaction.ColoredCoinsAskOrderPlacementAttachment)localObject4).asset));
+                      if ((localInteger == null) || (localInteger.intValue() < ((Nxt.Transaction.ColoredCoinsAskOrderPlacementAttachment)localObject4).quantity))
                       {
                         j = 1;
                         ((Nxt.Account)localObject3).addToUnconfirmedBalance(k * 100L);
                       }
                       else
                       {
-                        ((Nxt.Account)localObject3).unconfirmedAssetBalances.put(Long.valueOf(((Nxt.Transaction.ColoredCoinsAskOrderPlacementAttachment)localObject4).asset), Integer.valueOf(((Integer)((Nxt.Account)localObject3).unconfirmedAssetBalances.get(Long.valueOf(((Nxt.Transaction.ColoredCoinsAskOrderPlacementAttachment)localObject4).asset))).intValue() - ((Nxt.Transaction.ColoredCoinsAskOrderPlacementAttachment)localObject4).quantity));
+                        ((Nxt.Account)localObject3).addToUnconfirmedAssetBalance(Long.valueOf(((Nxt.Transaction.ColoredCoinsAskOrderPlacementAttachment)localObject4).asset), -((Nxt.Transaction.ColoredCoinsAskOrderPlacementAttachment)localObject4).quantity);
                       }
                     }
                     else if (localTransaction.subtype == 3)
@@ -453,7 +520,7 @@ class Nxt$Transaction
           localJSONObject.put("amount", Integer.valueOf(localTransaction.amount));
           localJSONObject.put("fee", Integer.valueOf(localTransaction.fee));
           localJSONObject.put("sender", Nxt.convert(l1));
-          localJSONObject.put("id", Nxt.convert(localTransaction.getId()));
+          localJSONObject.put("id", localTransaction.getStringId());
           localJSONArray3.add(localJSONObject);
           if (j != 0) {
             ((JSONObject)???).put("addedDoubleSpendingTransactions", localJSONArray3);
@@ -563,6 +630,19 @@ class Nxt$Transaction
     case 1: 
       switch (this.subtype)
       {
+      case 0: 
+        if (Nxt.Block.getLastBlock().height < 40000) {
+          return false;
+        }
+        try
+        {
+          Nxt.Transaction.MessagingArbitraryMessageAttachment localMessagingArbitraryMessageAttachment = (Nxt.Transaction.MessagingArbitraryMessageAttachment)this.attachment;
+          return (this.amount == 0) && (localMessagingArbitraryMessageAttachment.message.length <= 1000);
+        }
+        catch (Exception localException1)
+        {
+          return false;
+        }
       case 1: 
         if (Nxt.Block.getLastBlock().height < 22000) {
           return false;
@@ -580,9 +660,9 @@ class Nxt$Transaction
             }
           }
           Nxt.Alias localAlias = (Nxt.Alias)Nxt.aliases.get(str);
-          return (localAlias == null) || (localAlias.account.id == Nxt.Account.getId(this.senderPublicKey));
+          return (localAlias == null) || (Arrays.equals((byte[])localAlias.account.publicKey.get(), this.senderPublicKey));
         }
-        catch (Exception localException)
+        catch (Exception localException2)
         {
           return false;
         }
@@ -595,7 +675,7 @@ class Nxt$Transaction
   boolean verify()
     throws Exception
   {
-    Nxt.Account localAccount = (Nxt.Account)Nxt.accounts.get(Long.valueOf(Nxt.Account.getId(this.senderPublicKey)));
+    Nxt.Account localAccount = (Nxt.Account)Nxt.accounts.get(Long.valueOf(getSenderAccountId()));
     if (localAccount == null) {
       return false;
     }
@@ -611,7 +691,7 @@ class Nxt$Transaction
   {
     synchronized (Nxt.blocksAndTransactionsLock)
     {
-      TreeSet localTreeSet = new TreeSet(new Nxt.Transaction.1());
+      TreeSet localTreeSet = new TreeSet(new Nxt.Transaction.2());
       localTreeSet.addAll(Nxt.transactions.values());
       MessageDigest localMessageDigest = MessageDigest.getInstance("SHA-256");
       Iterator localIterator = localTreeSet.iterator();

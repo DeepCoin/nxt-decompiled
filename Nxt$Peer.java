@@ -224,7 +224,7 @@ class Nxt$Peer
       localJSONObject1.put("hallmark", Nxt.myHallmark);
     }
     localJSONObject1.put("application", "NRS");
-    localJSONObject1.put("version", "0.5.3");
+    localJSONObject1.put("version", "0.5.5");
     localJSONObject1.put("platform", Nxt.myPlatform);
     localJSONObject1.put("scheme", Nxt.myScheme);
     localJSONObject1.put("port", Integer.valueOf(Nxt.myPort));
@@ -369,7 +369,7 @@ class Nxt$Peer
     localStringBuilder.append(" (");
     localStringBuilder.append(this.version == null ? "?" : this.version.substring(0, Math.min(this.version.length(), 10)));
     localStringBuilder.append(")").append(" @ ");
-    localStringBuilder.append(this.platform == null ? "?" : this.platform.substring(0, Math.min(this.platform.length(), 10)));
+    localStringBuilder.append(this.platform == null ? "?" : this.platform.substring(0, Math.min(this.platform.length(), 12)));
     return localStringBuilder.toString();
   }
   

@@ -14,9 +14,14 @@ class Nxt$Transaction$ColoredCoinsAskOrderCancellationAttachment
     this.order = paramLong;
   }
   
+  public int getSize()
+  {
+    return 8;
+  }
+  
   public byte[] getBytes()
   {
-    ByteBuffer localByteBuffer = ByteBuffer.allocate(8);
+    ByteBuffer localByteBuffer = ByteBuffer.allocate(getSize());
     localByteBuffer.order(ByteOrder.LITTLE_ENDIAN);
     localByteBuffer.putLong(this.order);
     return localByteBuffer.array();
@@ -27,4 +32,14 @@ class Nxt$Transaction$ColoredCoinsAskOrderCancellationAttachment
     JSONObject localJSONObject = new JSONObject();
     localJSONObject.put("order", Nxt.convert(this.order));
     return localJSONObject;
+  }
+  
+  public long getRecipientDeltaBalance()
+  {
+    return 0L;
+  }
+  
+  public long getSenderDeltaBalance()
+  {
+    return 0L;
   }

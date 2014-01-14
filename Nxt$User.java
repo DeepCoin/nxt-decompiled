@@ -1,10 +1,11 @@
+import java.io.PrintWriter;
+import java.io.Writer;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import javax.servlet.AsyncContext;
-import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletResponse;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -62,11 +63,11 @@ class Nxt$User
         try
         {
           this.asyncContext.getResponse().setContentType("text/plain; charset=UTF-8");
-          ServletOutputStream localServletOutputStream = this.asyncContext.getResponse().getOutputStream();
+          PrintWriter localPrintWriter = this.asyncContext.getResponse().getWriter();
           Object localObject1 = null;
           try
           {
-            localServletOutputStream.write(localJSONObject2.toString().getBytes("UTF-8"));
+            localJSONObject2.writeJSONString(localPrintWriter);
           }
           catch (Throwable localThrowable2)
           {
@@ -75,18 +76,18 @@ class Nxt$User
           }
           finally
           {
-            if (localServletOutputStream != null) {
+            if (localPrintWriter != null) {
               if (localObject1 != null) {
                 try
                 {
-                  localServletOutputStream.close();
+                  localPrintWriter.close();
                 }
                 catch (Throwable localThrowable3)
                 {
                   localObject1.addSuppressed(localThrowable3);
                 }
               } else {
-                localServletOutputStream.close();
+                localPrintWriter.close();
               }
             }
           }

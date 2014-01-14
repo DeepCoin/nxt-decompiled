@@ -18,9 +18,14 @@ class Nxt$Transaction$ColoredCoinsAskOrderPlacementAttachment
     this.price = paramLong2;
   }
   
+  public int getSize()
+  {
+    return 20;
+  }
+  
   public byte[] getBytes()
   {
-    ByteBuffer localByteBuffer = ByteBuffer.allocate(20);
+    ByteBuffer localByteBuffer = ByteBuffer.allocate(getSize());
     localByteBuffer.order(ByteOrder.LITTLE_ENDIAN);
     localByteBuffer.putLong(this.asset);
     localByteBuffer.putInt(this.quantity);
@@ -35,4 +40,14 @@ class Nxt$Transaction$ColoredCoinsAskOrderPlacementAttachment
     localJSONObject.put("quantity", Integer.valueOf(this.quantity));
     localJSONObject.put("price", Long.valueOf(this.price));
     return localJSONObject;
+  }
+  
+  public long getRecipientDeltaBalance()
+  {
+    return 0L;
+  }
+  
+  public long getSenderDeltaBalance()
+  {
+    return 0L;
   }
